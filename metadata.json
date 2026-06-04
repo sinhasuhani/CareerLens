@@ -1,0 +1,6 @@
+{
+  "name": "AI Interview Preparation Assistant",
+  "description": "An advanced interview platform that analyzes resumes, generates custom questions, simulates realistic mock interviews with speech-to-text, and delivers rich feedback reports using Gemini.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
