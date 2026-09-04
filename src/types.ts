@@ -64,3 +64,13 @@ export interface InterviewSession {
   faceVisibilityScore?: number;
   smileFrequencyScore?: number;
 }
+
+export interface CareerAnalysisResult {
+  match_score: number;
+  matching_skills: string[];
+  skill_gaps: string[];
+  ats_keywords: string[];
+  resume_suggestions: string[];
+  interview_focus: string[];
+  retrieved_requirements: string[];
+}

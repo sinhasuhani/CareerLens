@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { 
   Sparkles, Briefcase, Award, Clock, FileCode, CheckCircle2, 
-  Trash2, BookOpen, AlertCircle, RotateCcw, Calendar, History
+  Trash2, BookOpen, AlertCircle, RotateCcw, Calendar, History, Bot
 } from "lucide-react";
 import { ResumeData, InterviewSession } from "./types";
 import { DashboardHeader } from "./components/DashboardHeader";
@@ -9,6 +9,7 @@ import { ResumeUpload } from "./components/ResumeUpload";
 import { SetupSession } from "./components/SetupSession";
 import { MockInterviewConsole } from "./components/MockInterviewConsole";
 import { InterviewReportView } from "./components/InterviewReportView";
+import { CareerMatchView } from "./components/CareerMatchView";
 
 export default function App() {
   // Application workflows state
@@ -16,7 +17,7 @@ export default function App() {
   const [resumeRawText, setResumeRawText] = useState("");
   const [activeSession, setActiveSession] = useState<InterviewSession | null>(null);
   const [pastSessions, setPastSessions] = useState<InterviewSession[]>([]);
-  const [currentView, setCurrentView] = useState<'onboarding' | 'setup' | 'interview' | 'report'>('onboarding');
+  const [currentView, setCurrentView] = useState<'career-match' | 'onboarding' | 'setup' | 'interview' | 'report'>('career-match');
 
   // Load state and past history results from localStorage
   useEffect(() => {
@@ -27,7 +28,6 @@ export default function App() {
     if (cachedResume) {
       try {
         setResumeData(JSON.parse(cachedResume));
-        setCurrentView('setup');
       } catch (e) {
         console.warn("Parsing cached resume failed.");
       }
@@ -87,13 +87,37 @@ export default function App() {
     
     if (activeSession?.id === id) {
       setActiveSession(null);
-      setCurrentView(resumeData ? 'setup' : 'onboarding');
+      setCurrentView('career-match');
     }
   };
 
   const handleStartNewMock = () => {
     setActiveSession(null);
     setCurrentView(resumeData ? 'setup' : 'onboarding');
+  };
+
+  const handleSelectTab = (tab: "career-match" | "interview") => {
+    if (tab === "career-match") {
+      setCurrentView("career-match");
+    } else {
+      if (activeSession && activeSession.status === "active") {
+        setCurrentView("interview");
+      } else if (activeSession && activeSession.status === "completed") {
+        setCurrentView("report");
+      } else if (resumeData) {
+        setCurrentView("setup");
+      } else {
+        setCurrentView("onboarding");
+      }
+    }
+  };
+
+  const handleContinueToMockFromCareerMatch = (suggestedRole?: string, focusTopics?: string[]) => {
+    if (resumeData) {
+      setCurrentView('setup');
+    } else {
+      setCurrentView('onboarding');
+    }
   };
 
   const handleResetProfileAndClear = () => {
@@ -104,16 +128,18 @@ export default function App() {
       saveSessionsToCache([]);
       localStorage.removeItem("prepsphere_resume_data");
       localStorage.removeItem("prepsphere_resume_text");
-      setCurrentView('onboarding');
+      setCurrentView('career-match');
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col justify-between selection:bg-indigo-500/15 selection:text-indigo-900">
       
-      {/* Header element */}
+      {/* Header element with CareerLens AI branding & tabs */}
       <DashboardHeader
         pastSessions={pastSessions}
+        currentTab={currentView === "career-match" ? "career-match" : "interview"}
+        onSelectTab={handleSelectTab}
         onSelectPastSession={handleSelectPastSession}
         onDeleteSession={handleDeleteSession}
         onNewSession={handleStartNewMock}
@@ -123,8 +149,34 @@ export default function App() {
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 py-6" id="main-content-flow">
         
         {/* Render View routers */}
+        {currentView === 'career-match' && (
+          <CareerMatchView
+            resumeData={resumeData}
+            resumeRawText={resumeRawText}
+            onContinueToMockInterview={handleContinueToMockFromCareerMatch}
+            onUpdateResumeText={(text) => {
+              setResumeRawText(text);
+              localStorage.setItem("prepsphere_resume_text", text);
+            }}
+          />
+        )}
+
         {currentView === 'onboarding' && (
           <div className="space-y-6">
+            <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-indigo-600" />
+                <span className="text-sm font-bold text-slate-800">Mock Interview Workspace</span>
+              </div>
+              <button
+                onClick={() => setCurrentView('career-match')}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Switch to Career Match (RAG)</span>
+              </button>
+            </div>
+
             <ResumeUpload onAnalysisComplete={handleAnalysisComplete} />
             
             {/* Dynamic visual statistics strip for direct user motivation onboarding */}
@@ -157,6 +209,20 @@ export default function App() {
 
         {currentView === 'setup' && resumeData && (
           <div className="space-y-6">
+            <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-indigo-600" />
+                <span className="text-sm font-bold text-slate-800">Mock Interview Workspace</span>
+              </div>
+              <button
+                onClick={() => setCurrentView('career-match')}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Switch to Career Match (RAG)</span>
+              </button>
+            </div>
+
             <SetupSession
               resumeData={resumeData}
               onInitiateSession={handleInitiateSession}
@@ -243,8 +309,8 @@ export default function App() {
       {/* System Footer bar */}
       <footer className="w-full bg-white py-4 px-6 border-t border-slate-200 text-center font-mono text-[10px] text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <span>AI Interview Preparation Assistant // Powered by models/gemini-3.5-flash with native PDF mapping.</span>
-          <span>© 2026 PrepSphere Applet Corporation. Active, secure sandbox preview module.</span>
+          <span>CareerLens AI • RAG-Powered Resume & Career Advisor // LangChain + FAISS + Gemini</span>
+          <span>© 2026 CareerLens AI. Active, secure sandbox preview module.</span>
         </div>
       </footer>
     </div>

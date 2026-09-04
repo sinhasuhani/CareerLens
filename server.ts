@@ -39,7 +39,48 @@ function getGeminiClient(): GoogleGenAI {
 
 // Healthcheck
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+  res.json({ status: "ok", service: "CareerLens AI Server", time: new Date().toISOString() });
+});
+
+// Endpoint: CareerLens AI - RAG Career & Resume Analysis
+app.post("/api/career/analyze", async (req, res) => {
+  try {
+    const { resumeText, jobDescription } = req.body;
+    if (!resumeText || !jobDescription) {
+      res.status(400).json({ error: "Missing resumeText or jobDescription in request body." });
+      return;
+    }
+
+    const ragServiceUrl = process.env.RAG_SERVICE_URL || "http://127.0.0.1:8000";
+    console.log(`[CareerLens] Forwarding analysis to Python RAG service: ${ragServiceUrl}/analyze`);
+
+    const response = await fetch(`${ragServiceUrl}/analyze`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        resume_text: resumeText,
+        job_description: jobDescription,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      res.status(response.status).json({
+        error: errorData.detail || `RAG Service error (${response.status})`,
+      });
+      return;
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error: any) {
+    console.error("[CareerLens] Python RAG service proxy error:", error);
+    res.status(503).json({
+      error: `Python FastAPI RAG service unreachable at ${process.env.RAG_SERVICE_URL || "http://127.0.0.1:8000"}. Please make sure the Python RAG service is started. (Run: cd rag_service && source .venv/bin/activate && python main.py). Details: ${error.message}`,
+    });
+  }
 });
 
 // Endpoint: Resume Analytics & Extraction
@@ -345,7 +386,7 @@ async function setupViteStaticServing() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`AI Interview Preparation Assistant running on http://0.0.0.0:${PORT}`);
+    console.log(`CareerLens AI Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
