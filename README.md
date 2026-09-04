@@ -65,6 +65,14 @@ In today's competitive job market, candidates face significant obstacles:
 
 ---
 
+## 🎥 Demo Video
+
+This video demonstrates the end-to-end CareerLens AI workflow, including Career Match analysis, RAG retrieval evidence, and the interactive mock interview flow.
+
+[▶️ Watch the CareerLens AI Demo](./demo/CareerLens_AI_Demo.mp4)
+
+---
+
 ## 🏗️ System Architecture
 
 The following diagram illustrates the multi-tier architecture powering CareerLens AI:
