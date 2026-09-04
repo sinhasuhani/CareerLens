@@ -138,6 +138,86 @@ flowchart TD
 
 ---
 
+## 🧠 Prompt Engineering
+
+CareerLens AI utilizes structured prompt engineering to maximize factual consistency, domain accuracy, and actionable user guidance. Key prompt techniques include:
+
+- **Role Grounding**: Gemini is explicitly conditioned with system instructions to act as an expert technical recruiter and career advisor, setting an objective and constructive tone.
+- **Context Grounding**: Retrieved Job Description vector chunks are provided as explicit bounding context, directing the model to evaluate the candidate strictly against real job specifications rather than speculative requirements.
+- **Structured Output Enforcement**: Prompts enforce a strict, machine-readable JSON schema (validated through Pydantic models) returning:
+  1. `match_score` (0–100)
+  2. `matching_skills`
+  3. `skill_gaps`
+  4. `ats_keywords`
+  5. `resume_suggestions`
+  6. `interview_focus`
+- **Action-Oriented Instructions**: System prompts demand concrete, impact-focused advice (e.g., using strong action verbs, quantifiable metrics, and specific framework recommendations) over generic platitudes.
+- **Retrieval-Before-Generation**: The pipeline isolates dense retrieval from final generation. Relevant job requirement chunks are extracted and ranked via FAISS before being injected into Gemini's context window.
+
+### Representative Production Prompt Example
+*(Simplified representation of the production RAG analysis prompt)*
+
+```text
+You are a career advisor analyzing a candidate's resume against a target job description.
+
+Use ONLY the retrieved job requirements as the primary evidence for role-specific recommendations.
+
+Candidate Resume:
+{resume}
+
+Retrieved Job Requirements:
+{retrieved_context}
+
+Return:
+1. Match score from 0-100
+2. Matching skills
+3. Skill gaps
+4. ATS keywords
+5. Resume improvement suggestions
+6. Interview focus areas
+```
+
+---
+
+## 🔄 Agent / Workflow Design
+
+CareerLens AI is architected as an end-to-end, multi-stage **AI workflow and processing pipeline** (rather than an unconstrained autonomous agent), ensuring deterministic execution, high performance, and reliable reproducibility.
+
+### Pipeline Execution Flow
+```text
+Resume + Job Description
+    ↓
+Job Description Chunking
+    ↓
+Gemini Embeddings
+    ↓
+FAISS Vector Retrieval
+    ↓
+Relevant Job Requirements
+    ↓
+Gemini Career Analysis
+    ↓
+Match Score / Skill Gaps / ATS / Suggestions
+    ↓
+Mock Interview
+```
+
+### Stage Separation
+The workflow cleanly separates the user journey into distinct, decoupled operational phases:
+1. **Retrieval Stage**: Document chunking, dense vector embedding generation, and FAISS indexing isolate the semantic search problem from language generation.
+2. **Analysis Stage**: Grounded prompt synthesis constructs the structured career diagnostic scorecard, verifying every score and suggestion against retrieved evidence.
+3. **Interview Preparation Stage**: Diagnosed skill gaps and high-priority interview focus areas feed forward into the real-time AI mock interview console for dynamic questioning and evaluation.
+
+### Role of Core Technologies
+- **LangChain**: Manages workflow orchestration, recursive document splitting, context assembly, and retrieval chains.
+- **FAISS**: Delivers fast, in-memory dense vector similarity search to identify top-$k$ relevant requirement chunks without database overhead.
+- **Google Gemini**: Supplies high-dimensional dense embeddings (`gemini-embedding-001`) and multi-turn LLM reasoning (`gemini-3.5-flash` / `gemini-2.5-flash`) for structured evaluation and mock interviews.
+- **FastAPI**: Hosts the asynchronous Python microservice exposing clean REST endpoints (`/analyze`, `/health`) for RAG operations.
+- **Express**: Functions as the application gateway and API proxy, managing client requests, mock interview sessions, and graceful fallbacks.
+- **React / TypeScript**: Delivers a responsive, type-safe user interface featuring animated metric scorecards, interactive RAG evidence viewers, and voice-assisted interview consoles.
+
+---
+
 ## 🚀 Getting Started & Local Setup
 
 Follow these step-by-step instructions to run the full CareerLens AI suite locally.
@@ -241,6 +321,9 @@ npm run dev
 ```text
 careerlens/
 └── PrepSphere/
+    ├── docs/
+    │   ├── architecture.png              # System architecture pipeline diagram
+    │   └── CareerLens_AI_Report.pdf      # Complete project technical report
     ├── src/
     │   ├── components/
     │   │   ├── CareerMatchView.tsx       # RAG match dashboard, skill gaps & metrics
